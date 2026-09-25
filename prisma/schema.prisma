@@ -1,0 +1,1147 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model admin {
+  id            BigInt     @id @default(autoincrement())
+  uuid          String     @unique @db.Uuid
+  email_id      String     @unique(map: "uq_admin_email") @db.VarChar(255)
+  password      String     @db.VarChar(255)
+  profile_image String?    @db.VarChar(255)
+  full_name     String     @db.VarChar(255)
+  timezone      String?    @db.VarChar(100)
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime
+  channels      channels[]
+}
+
+model advocacy_scripts {
+  id         BigInt     @id @default(autoincrement())
+  script_id  String     @unique @db.VarChar(100)
+  title      String     @db.VarChar(255)
+  content    String
+  pathway    condition?
+  reviewer   String?    @db.VarChar(255)
+  is_active  Boolean    @default(true)
+  created_at DateTime   @default(now())
+  updated_at DateTime
+}
+
+model ai_conversations {
+  id                 BigInt               @id @default(autoincrement())
+  uuid               String               @unique @db.Uuid
+  user_id            BigInt
+  context            conversation_context @default(GENERAL_REFLECTION)
+  pathway            condition?
+  appointment_id     BigInt?
+  rolling_summary    String?
+  summarized_through BigInt?
+  is_active          Boolean              @default(true)
+  created_at         DateTime             @default(now())
+  updated_at         DateTime
+  appointments       appointments?        @relation(fields: [appointment_id], references: [id])
+  users              users                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  ai_messages        ai_messages[]
+
+  @@index([appointment_id])
+  @@index([user_id])
+}
+
+model ai_messages {
+  id               BigInt           @id @default(autoincrement())
+  conversation_id  BigInt
+  role             message_role
+  content          String
+  input_tokens     Int?
+  output_tokens    Int?
+  distress_level   distress_level   @default(NONE)
+  created_at       DateTime         @default(now())
+  metadata         Json?
+  type             String           @default("TEXT") @db.VarChar(50)
+  ai_conversations ai_conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id, created_at])
+  @@index([conversation_id])
+}
+
+model appointments {
+  id                 BigInt             @id @default(autoincrement())
+  user_id            BigInt
+  provider_name      String             @db.VarChar(255)
+  location           String?
+  reminder_time      String?
+  status             appointment_status
+  remark             String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime
+  date               DateTime
+  time               String             @db.VarChar(20)
+  additional         String?
+  feel               overall_mood?
+  follow_up_action   String?
+  follow_up_date     DateTime?
+  prep_visits_status prep_visits_status
+  reminder           Boolean            @default(false)
+  visit_type         visit_type
+  visit_notes_status visit_notes_status
+  timezone           String?            @db.VarChar(100)
+  ai_conversations   ai_conversations[]
+  users              users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  coaching_cards     coaching_cards?
+  prep_visits        prep_visits?
+  visit_briefs       visit_briefs?
+
+  @@index([user_id])
+}
+
+model avatars {
+  id         BigInt      @id @default(autoincrement())
+  image      String      @db.VarChar(255)
+  type       avatar_type
+  created_at DateTime    @default(now())
+
+  @@index([type])
+}
+
+model blog_bookmarks {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  blog_id    BigInt
+  created_at DateTime @default(now())
+  blogs      blogs    @relation(fields: [blog_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, blog_id])
+  @@index([blog_id])
+  @@index([user_id])
+}
+
+model blog_categories {
+  id              BigInt          @id @default(autoincrement())
+  blog_id         BigInt
+  category_id     BigInt
+  created_at      DateTime        @default(now())
+  blogs           blogs           @relation(fields: [blog_id], references: [id], onDelete: Cascade)
+  mstr_categories mstr_categories @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@unique([blog_id, category_id])
+  @@index([blog_id])
+  @@index([category_id])
+}
+
+model blog_media {
+  id            BigInt          @id @default(autoincrement())
+  blog_id       BigInt
+  media_url     String
+  media_type    blog_media_type
+  thumbnail_url String?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime
+  blogs         blogs           @relation(fields: [blog_id], references: [id], onDelete: Cascade)
+
+  @@index([blog_id])
+}
+
+model blogs {
+  id              BigInt            @id @default(autoincrement())
+  uuid            String            @unique @db.Uuid
+  type            blog_type
+  title           String            @db.VarChar(255)
+  description     String
+  read_time       Int
+  status          blog_status       @default(DRAFT)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  blog_bookmarks  blog_bookmarks[]
+  blog_categories blog_categories[]
+  blog_media      blog_media[]
+
+  @@index([type])
+}
+
+model body_logs {
+  id             BigInt           @id @default(autoincrement())
+  user_id        BigInt           @unique
+  created_at     DateTime         @default(now())
+  updated_at     DateTime
+  users          users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  mood_history   mood_history[]
+  period_history period_history[]
+  sleep_history  sleep_history[]
+
+  @@index([user_id])
+}
+
+model care_visit_summaries {
+  id            BigInt   @id @default(autoincrement())
+  user_id       BigInt   @unique
+  content       Json
+  model_version String?
+  generated_at  DateTime @default(now())
+  updated_at    DateTime
+  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model channel_categories {
+  id         BigInt           @id @default(autoincrement())
+  channel_id BigInt
+  category   channel_category
+  created_at DateTime         @default(now())
+  updated_at DateTime
+  channels   channels         @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+
+  @@index([channel_id])
+}
+
+model channel_members {
+  id         BigInt   @id @default(autoincrement())
+  channel_id BigInt
+  user_id    BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime
+  channels   channels @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([channel_id, user_id])
+  @@index([channel_id])
+  @@index([user_id, channel_id])
+  @@index([user_id])
+}
+
+model channels {
+  id                 BigInt               @id @default(autoincrement())
+  created_by         BigInt?
+  name               String               @db.VarChar(150)
+  user_name          String?              @db.VarChar(255)
+  image              String?
+  description        String
+  category_id        BigInt?
+  total_members      BigInt               @default(0)
+  created_at         DateTime             @default(now())
+  updated_at         DateTime
+  channel_type       channel_type         @default(STANDARD)
+  is_active          Boolean              @default(true)
+  owned_by           chanel_owned         @default(USER)
+  admin_id           BigInt?
+  channel_categories channel_categories[]
+  channel_members    channel_members[]
+  admin              admin?               @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+  users              users?               @relation(fields: [created_by], references: [id], onDelete: Cascade)
+  posts              posts[]
+
+  @@index([admin_id])
+  @@index([created_by])
+}
+
+model checkin_symptoms {
+  id         BigInt   @id @default(autoincrement())
+  checkin_id BigInt
+  symptom_id BigInt
+  created_at DateTime @default(now())
+  checkins   checkins @relation(fields: [checkin_id], references: [id], onDelete: Cascade)
+  symptoms   symptoms @relation(fields: [symptom_id], references: [id], onDelete: Cascade)
+
+  @@index([checkin_id])
+}
+
+model checkins {
+  id               BigInt             @id @default(autoincrement())
+  user_id          BigInt
+  week_start       DateTime
+  week_end         DateTime
+  remedy           String[]
+  overall_mood     overall_mood
+  notes            String?
+  insight          String?
+  created_at       DateTime           @default(now())
+  updated_at       DateTime
+  checkin_symptoms checkin_symptoms[]
+  users            users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([week_start, week_end])
+}
+
+model coaching_cards {
+  id             BigInt       @id @default(autoincrement())
+  appointment_id BigInt       @unique
+  variant        card_variant
+  sections       Json
+  script_id      String?
+  is_readonly    Boolean      @default(false)
+  model_version  String?
+  generated_at   DateTime     @default(now())
+  updated_at     DateTime
+  appointments   appointments @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+}
+
+model comment_reports {
+  id         BigInt   @id @default(autoincrement())
+  comment_id BigInt
+  user_id    BigInt
+  reason     String
+  created_at DateTime @default(now())
+  comments   comments @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([comment_id])
+  @@index([user_id])
+}
+
+model comments {
+  id              BigInt            @id @default(autoincrement())
+  post_id         BigInt
+  user_id         BigInt
+  comment         String
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  comment_reports comment_reports[]
+  posts           posts             @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  users           users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@index([user_id])
+}
+
+model community_block_users {
+  id                                                 BigInt   @id @default(autoincrement())
+  user_id                                            BigInt
+  blocked_user_id                                    BigInt
+  reason                                             String?
+  created_at                                         DateTime @default(now())
+  users_community_block_users_blocked_user_idTousers users    @relation("community_block_users_blocked_user_idTousers", fields: [blocked_user_id], references: [id], onDelete: Cascade)
+  users_community_block_users_user_idTousers         users    @relation("community_block_users_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, blocked_user_id])
+  @@index([user_id, blocked_user_id])
+}
+
+model distress_events {
+  id                  BigInt         @id @default(autoincrement())
+  user_id             BigInt
+  source              String         @db.VarChar(50)
+  level               distress_level
+  routed_to_resources Boolean        @default(false)
+  conversation_id     BigInt?
+  created_at          DateTime       @default(now())
+  users               users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([level])
+  @@index([user_id])
+}
+
+model email_verification {
+  email_id   String   @id @db.VarChar(150)
+  code       String   @db.VarChar(100)
+  created_at DateTime @default(now())
+  updated_at DateTime
+}
+
+model experiment_logs {
+  id            BigInt       @id @default(autoincrement())
+  experiment_id BigInt
+  date          DateTime
+  mood          overall_mood
+  created_at    DateTime     @default(now())
+  experiments   experiments  @relation(fields: [experiment_id], references: [id], onDelete: Cascade)
+
+  @@index([experiment_id])
+}
+
+model experiments {
+  id              BigInt            @id @default(autoincrement())
+  user_id         BigInt
+  title           String            @db.VarChar(255)
+  start_date      DateTime
+  end_date        DateTime
+  status          experiment_status @default(ACTIVE)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  duration        String
+  goal            String[]
+  reminder        String?           @db.VarChar(10)
+  total_logs      BigInt            @default(0)
+  experiment_logs experiment_logs[]
+  users           users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([user_id])
+}
+
+model flare_symptoms {
+  id         BigInt   @id @default(autoincrement())
+  flare_id   BigInt
+  symptom_id BigInt
+  created_at DateTime @default(now())
+  flares     flares   @relation(fields: [flare_id], references: [id], onDelete: Cascade)
+  symptoms   symptoms @relation(fields: [symptom_id], references: [id], onDelete: Cascade)
+
+  @@index([flare_id])
+}
+
+model flares {
+  id              BigInt              @id @default(autoincrement())
+  user_id         BigInt
+  remedy          String[]
+  reason          String[]
+  intensity       log_flare_intensity
+  notes           String?
+  created_at      DateTime            @default(now())
+  updated_at      DateTime
+  custom_track    String?             @db.VarChar(255)
+  energy_level    log_flare_mood
+  date            DateTime            @default(now())
+  time            String              @db.VarChar(10)
+  custom_symptoms String[]            @default([])
+  flare_symptoms  flare_symptoms[]
+  users           users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model followers {
+  id                               BigInt   @id @default(autoincrement())
+  follow_by                        BigInt
+  follow_to                        BigInt
+  created_at                       DateTime @default(now())
+  users_followers_follow_byTousers users    @relation("followers_follow_byTousers", fields: [follow_by], references: [id], onDelete: Cascade)
+  users_followers_follow_toTousers users    @relation("followers_follow_toTousers", fields: [follow_to], references: [id], onDelete: Cascade)
+
+  @@unique([follow_by, follow_to])
+  @@index([follow_by, follow_to])
+}
+
+model help_support {
+  id          BigInt   @id @default(autoincrement())
+  user_id     BigInt
+  description String
+  created_at  DateTime @default(now())
+  updated_at  DateTime
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model library_content {
+  id          BigInt        @id @default(autoincrement())
+  slug        String        @unique @db.VarChar(255)
+  pathway     condition?
+  topic       String        @db.VarChar(255)
+  tier        evidence_tier @default(LIBRARY)
+  summary     String
+  source_url  String?
+  reviewed_by String?       @db.VarChar(255)
+  is_active   Boolean       @default(true)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime
+
+  @@index([pathway])
+  @@index([topic])
+}
+
+model live_streams {
+  id                      BigInt                    @id @default(autoincrement())
+  user_id                 BigInt
+  host_id                 String                    @db.VarChar(255)
+  channel_name            String                    @unique @db.VarChar(255)
+  title                   String                    @db.VarChar(255)
+  description             String
+  date                    String                    @db.VarChar(100)
+  time                    String                    @db.VarChar(100)
+  duration                String                    @db.VarChar(100)
+  status                  live_stream_status        @default(SCHEDULED)
+  created_at              DateTime                  @default(now())
+  updated_at              DateTime
+  ended_at                DateTime?
+  users                   users                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  livestream_messages     livestream_messages[]
+  livestream_participants livestream_participants[]
+
+  @@index([host_id])
+  @@index([user_id])
+}
+
+model livestream_messages {
+  id            BigInt       @id @default(autoincrement())
+  livestream_id BigInt
+  user_id       BigInt
+  user_uuid     String       @db.VarChar(255)
+  message       String
+  created_at    DateTime     @default(now())
+  live_streams  live_streams @relation(fields: [livestream_id], references: [id], onDelete: Cascade)
+  users         users        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([livestream_id])
+  @@index([user_id])
+}
+
+model livestream_participants {
+  id            BigInt             @id @default(autoincrement())
+  livestream_id BigInt
+  user_id       BigInt
+  user_uuid     String             @db.VarChar(255)
+  status        participant_status @default(ACTIVE)
+  joined_at     DateTime           @default(now())
+  left_at       DateTime?
+  live_streams  live_streams       @relation(fields: [livestream_id], references: [id], onDelete: Cascade)
+  users         users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([livestream_id, user_id])
+  @@index([livestream_id])
+  @@index([user_id])
+}
+
+model log_symptom_items {
+  id             BigInt       @id @default(autoincrement())
+  log_symptom_id BigInt
+  symptom_id     BigInt
+  log_symptoms   log_symptoms @relation(fields: [log_symptom_id], references: [id], onDelete: Cascade)
+  symptoms       symptoms     @relation(fields: [symptom_id], references: [id], onDelete: Cascade)
+
+  @@unique([log_symptom_id, symptom_id])
+}
+
+model log_symptoms {
+  id                BigInt              @id @default(autoincrement())
+  user_id           BigInt
+  log_date          DateTime
+  created_at        DateTime            @default(now())
+  log_symptom_items log_symptom_items[]
+  users             users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model mood_history {
+  id           BigInt       @id @default(autoincrement())
+  body_logs_id BigInt
+  mood         overall_mood
+  tags         String[]     @default([])
+  created_at   DateTime     @default(now())
+  updated_at   DateTime
+  date         DateTime     @default(now())
+  time         String       @db.VarChar(10)
+  body_logs    body_logs    @relation(fields: [body_logs_id], references: [id], onDelete: Cascade)
+
+  @@index([body_logs_id])
+}
+
+model mstr_categories {
+  id              BigInt            @id @default(autoincrement())
+  name            String            @db.VarChar(255)
+  total_blogs     BigInt            @default(0)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  blog_categories blog_categories[]
+}
+
+model mstr_symptoms {
+  id              BigInt            @id @default(autoincrement())
+  name            String            @unique @db.VarChar(255)
+  image           String?           @db.VarChar(255)
+  display_order   Int?
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  symptoms        symptoms[]
+  user_conditions user_conditions[]
+}
+
+model my_body_summaries {
+  id            BigInt           @id @default(autoincrement())
+  user_id       BigInt
+  interval      summary_interval
+  content       Json
+  confidence    String           @db.VarChar(50)
+  period_start  DateTime
+  period_end    DateTime
+  model_version String?
+  generated_at  DateTime         @default(now())
+  users         users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([user_id, interval])
+}
+
+model onboarding {
+  id                        BigInt                      @id @default(autoincrement())
+  user_id                   BigInt                      @unique
+  brings_reason             brings_reason
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime
+  users                     users                       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_conditions           user_conditions[]
+  user_dashboard            user_dashboard?
+  user_tracking_preferences user_tracking_preferences[]
+}
+
+model period_history {
+  id           BigInt     @id @default(autoincrement())
+  body_logs_id BigInt
+  period       period_log
+  created_at   DateTime   @default(now())
+  updated_at   DateTime
+  date         DateTime   @default(now())
+  tags         String[]   @default([])
+  time         String     @default("") @db.VarChar(10)
+  body_logs    body_logs  @relation(fields: [body_logs_id], references: [id], onDelete: Cascade)
+
+  @@index([body_logs_id])
+}
+
+model post_media {
+  id         BigInt          @id @default(autoincrement())
+  post_id    BigInt
+  media_url  String
+  media_type post_media_type
+  created_at DateTime        @default(now())
+  updated_at DateTime
+  posts      posts           @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+}
+
+model post_reports {
+  id         BigInt   @id @default(autoincrement())
+  post_id    BigInt
+  user_id    BigInt
+  reason     String
+  created_at DateTime @default(now())
+  posts      posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@index([user_id])
+  @@index([user_id, post_id])
+}
+
+model posts {
+  id             BigInt         @id @default(autoincrement())
+  post_type      post_type      @default(INDIVIDUAL)
+  channel_id     BigInt?
+  user_id        BigInt
+  title          String         @db.VarChar(255)
+  description    String
+  total_likes    BigInt         @default(0)
+  total_dislikes BigInt         @default(0)
+  total_comments BigInt         @default(0)
+  is_edited      Boolean        @default(false)
+  created_at     DateTime       @default(now())
+  updated_at     DateTime
+  is_active      Boolean        @default(true)
+  remove_reason  String?
+  is_anonymous   Boolean        @default(false)
+  comments       comments[]
+  post_media     post_media[]
+  post_reports   post_reports[]
+  channels       channels?      @relation(fields: [channel_id], references: [id], onDelete: Cascade)
+  users          users          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  reactions      reactions[]
+
+  @@index([channel_id])
+  @@index([post_type])
+  @@index([user_id, created_at])
+  @@index([user_id])
+}
+
+model prep_visits {
+  id             BigInt       @id @default(autoincrement())
+  appointment_id BigInt       @unique
+  question       String?
+  created_at     DateTime     @default(now())
+  updated_at     DateTime
+  media          String?
+  notes          String?
+  summary        String?
+  to_discuss     String[]     @default([])
+  ai_suggestions Json?
+  appointments   appointments @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+}
+
+model reactions {
+  id         BigInt        @id @default(autoincrement())
+  post_id    BigInt
+  user_id    BigInt
+  reaction   reaction_type
+  created_at DateTime      @default(now())
+  updated_at DateTime
+  posts      posts         @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  users      users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([post_id, user_id])
+  @@index([post_id])
+  @@index([user_id])
+}
+
+model sleep_history {
+  id           BigInt    @id @default(autoincrement())
+  body_logs_id BigInt
+  sleep        sleep_log
+  tags         String[]  @default([])
+  created_at   DateTime  @default(now())
+  updated_at   DateTime
+  date         DateTime  @default(now())
+  time         String    @db.VarChar(10)
+  body_logs    body_logs @relation(fields: [body_logs_id], references: [id], onDelete: Cascade)
+
+  @@index([body_logs_id])
+}
+
+model subscription {
+  id                 BigInt                @id @default(autoincrement())
+  user_id            BigInt
+  product_id         String                @db.VarChar(100)
+  transaction_id     String?
+  platform           subscription_platform
+  amount             Decimal               @db.Decimal(10, 2)
+  currency           String                @db.VarChar(3)
+  status             subscription_status
+  expires_at         DateTime
+  purchase_token     String?
+  retry_count        Int                   @default(0)
+  auto_renew         Boolean               @default(true)
+  created_at         DateTime              @default(now())
+  updated_at         DateTime
+  last_charge_at     DateTime
+  starts_at          DateTime
+  is_current         Boolean               @default(false)
+  users              users                 @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscription_event subscription_event[]
+
+  @@index([status, expires_at])
+  @@index([user_id])
+  @@index([user_id, is_current])
+}
+
+model subscription_event {
+  id                BigInt       @id @default(autoincrement())
+  subscription_id   BigInt
+  provider_event_id String?      @db.VarChar(255)
+  event_type        String       @db.VarChar(100)
+  payload           Json
+  created_at        DateTime     @default(now())
+  subscription      subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+
+  @@index([provider_event_id])
+  @@index([subscription_id])
+}
+
+model symptoms {
+  id                BigInt              @id @default(autoincrement())
+  name              String              @db.VarChar(255)
+  image             String?             @db.VarChar(255)
+  group             BigInt
+  display_order     Int?
+  created_at        DateTime            @default(now())
+  updated_at        DateTime
+  checkin_symptoms  checkin_symptoms[]
+  flare_symptoms    flare_symptoms[]
+  log_symptom_items log_symptom_items[]
+  mstr_symptoms     mstr_symptoms       @relation(fields: [group], references: [id], onDelete: Cascade)
+
+  @@index([group])
+}
+
+model user_conditions {
+  id              BigInt        @id @default(autoincrement())
+  onboarding_id   BigInt
+  mstr_symptom_id BigInt
+  created_at      DateTime      @default(now())
+  mstr_symptoms   mstr_symptoms @relation(fields: [mstr_symptom_id], references: [id], onDelete: Cascade)
+  onboarding      onboarding    @relation(fields: [onboarding_id], references: [id], onDelete: Cascade)
+
+  @@unique([onboarding_id, mstr_symptom_id])
+  @@index([onboarding_id])
+}
+
+model user_dashboard {
+  id            BigInt     @id @default(autoincrement())
+  onboarding_id BigInt     @unique
+  content       String[]
+  created_at    DateTime   @default(now())
+  updated_at    DateTime
+  onboarding    onboarding @relation(fields: [onboarding_id], references: [id], onDelete: Cascade)
+
+  @@index([onboarding_id])
+}
+
+model user_tracking_preferences {
+  id            BigInt          @id @default(autoincrement())
+  onboarding_id BigInt
+  track_type    track_type
+  frequency     track_frequency
+  created_at    DateTime        @default(now())
+  onboarding    onboarding      @relation(fields: [onboarding_id], references: [id], onDelete: Cascade)
+
+  @@unique([onboarding_id, track_type])
+  @@index([onboarding_id])
+}
+
+model users {
+  id                                                                 BigInt                    @id @default(autoincrement())
+  uuid                                                               String                    @unique @db.Uuid
+  email_id                                                           String                    @unique(map: "uq_users_email") @db.VarChar(255)
+  password                                                           String                    @db.VarChar(255)
+  timezone                                                           String?                   @db.VarChar(100)
+  is_active                                                          Boolean                   @default(true)
+  created_at                                                         DateTime                  @default(now())
+  updated_at                                                         DateTime
+  provider                                                           auth_provider             @default(EMAIL)
+  sub                                                                String?                   @unique(map: "uq_users_sub") @db.VarChar(255)
+  is_special                                                         Boolean                   @default(false)
+  is_subscribed                                                      Boolean                   @default(false)
+  ai_conversations                                                   ai_conversations[]
+  appointments                                                       appointments[]
+  blog_bookmarks                                                     blog_bookmarks[]
+  body_logs                                                          body_logs?
+  care_visit_summaries                                               care_visit_summaries?
+  channel_members                                                    channel_members[]
+  channels                                                           channels[]
+  checkins                                                           checkins[]
+  comment_reports                                                    comment_reports[]
+  comments                                                           comments[]
+  community_block_users_community_block_users_blocked_user_idTousers community_block_users[]   @relation("community_block_users_blocked_user_idTousers")
+  community_block_users_community_block_users_user_idTousers         community_block_users[]   @relation("community_block_users_user_idTousers")
+  distress_events                                                    distress_events[]
+  experiments                                                        experiments[]
+  flares                                                             flares[]
+  followers_followers_follow_byTousers                               followers[]               @relation("followers_follow_byTousers")
+  followers_followers_follow_toTousers                               followers[]               @relation("followers_follow_toTousers")
+  help_support                                                       help_support[]
+  live_streams                                                       live_streams[]
+  livestream_messages                                                livestream_messages[]
+  livestream_participants                                            livestream_participants[]
+  log_symptoms                                                       log_symptoms[]
+  my_body_summaries                                                  my_body_summaries[]
+  onboarding                                                         onboarding?
+  post_reports                                                       post_reports[]
+  posts                                                              posts[]
+  reactions                                                          reactions[]
+  subscription                                                       subscription[]
+  users_devices                                                      users_devices[]
+  users_profile                                                      users_profile?
+}
+
+model users_devices {
+  user_id               BigInt
+  device_token          String      @unique @db.VarChar(512)
+  device_type           device_type @default(OTHER)
+  device_name           String?     @db.VarChar(120)
+  model                 String?     @db.VarChar(120)
+  device_os             String?     @db.VarChar(120)
+  app_version_installed String?     @db.VarChar(50)
+  created_at            DateTime    @default(now()) @db.Timestamp(0)
+  updated_at            DateTime    @default(now()) @db.Timestamp(0)
+  users                 users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, device_type])
+  @@index([device_token])
+}
+
+model users_profile {
+  user_id         BigInt   @id
+  profile_id      String?  @unique @db.VarChar(255)
+  user_name       String?  @db.VarChar(255)
+  first_name      String   @db.VarChar(255)
+  last_name       String   @db.VarChar(255)
+  profile_image   String?  @db.VarChar(255)
+  total_checkins  BigInt   @default(0)
+  total_posts     BigInt   @default(0)
+  total_followers BigInt   @default(0)
+  total_following BigInt   @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model visit_briefs {
+  id             BigInt       @id @default(autoincrement())
+  appointment_id BigInt       @unique
+  patient_side   Json
+  clinician_side Json
+  provenance     Json
+  model_version  String
+  generated_at   DateTime     @default(now())
+  updated_at     DateTime
+  appointments   appointments @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+}
+
+enum appointment_status {
+  UPCOMING
+  COMPLETED
+}
+
+enum auth_provider {
+  EMAIL
+  GOOGLE
+  APPLE
+  FACEBOOK
+}
+
+enum avatar_type {
+  USER
+  OTHER
+}
+
+enum blog_category {
+  PCOS
+  FERTILITY
+  FITNESS
+  MENTAL_HEALTH
+  PREGNANCY
+  LIFESTYLE
+  HORMONES
+  OTHER
+}
+
+enum blog_media_type {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+}
+
+enum blog_status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum blog_type {
+  ARTICLE
+  VIDEO
+  AUDIO
+  OTHER
+}
+
+enum brings_reason {
+  MANAGING_A_CONDITION
+  TTC
+  PERIMENOPAUSE_OR_MENOPAUSE
+  EXPLORING_MY_BODY
+  JOIN_COMMUNITY_ONLY
+}
+
+enum card_variant {
+  PERSONALIZED
+  GENERAL
+}
+
+enum chanel_owned {
+  USER
+  ADMIN
+}
+
+enum channel_category {
+  PCOS
+  FERTILITY
+  FITNESS
+  MENTAL_HEALTH
+  PREGNANCY
+  LIFESTYLE
+  HORMONES
+  OTHER
+}
+
+enum channel_type {
+  POPULAR
+  RECOMMENDED
+  STANDARD
+}
+
+enum condition {
+  PCOS
+  ENDOMETRIOSIS
+  ADENOMYOSIS
+  FIBROIDS
+  PMDD
+  OTHER
+}
+
+enum conversation_context {
+  GENERAL_REFLECTION
+  VISIT_PREP
+  POST_VISIT
+  CLARIFY
+  SYSTEM_NAV
+  MY_BODY_SUMMARY
+  CARE_VISIT_SUMMARY
+}
+
+enum device_type {
+  ANDROID
+  IOS
+  WEB
+  OTHER
+}
+
+enum distress_level {
+  NONE
+  LOW
+  ELEVATED
+  ACUTE
+}
+
+enum evidence_tier {
+  TIER_1
+  TIER_2
+  LIBRARY
+  EDITORIAL
+}
+
+enum experiment_status {
+  ACTIVE
+  COMPLETED
+  STOPPED
+}
+
+enum live_stream_status {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
+enum log_flare_intensity {
+  MILD
+  MODERATE
+  INTENSE
+  OVERWHELMING
+  SEVERE
+}
+
+enum log_flare_mood {
+  LOW
+  MEDIUM
+  HIGH
+  ENERGIZED
+  FULL
+  OKAY
+  DRAINED
+  RUNNING_LOW
+  EMPTY
+}
+
+enum message_role {
+  USER
+  ASSISTANT
+}
+
+enum overall_mood {
+  GOOD
+  OKAY
+  MEH
+  ROUGH
+  LOW
+  BAD
+  EASY
+  NEUTRAL
+  DIFFICULT
+  GREAT
+  MIXED
+  HARD
+}
+
+enum participant_status {
+  ACTIVE
+  BLOCKED
+  REMOVED
+}
+
+enum period_log {
+  HEAVY
+  MEDIUM
+  LIGHT
+  DISASTER
+}
+
+enum post_media_type {
+  IMAGE
+  VIDEO
+}
+
+enum post_type {
+  INDIVIDUAL
+  CHANNEL
+}
+
+enum prep_visits_status {
+  NOT_STARTED
+  IN_PROGRESS
+  READY
+  COMPLETED
+}
+
+enum provenance_status {
+  CAPTURED
+  DERIVED
+  EDITORIAL
+  GAP
+}
+
+enum reaction_type {
+  LIKE
+  DISLIKE
+}
+
+enum sleep_log {
+  GREAT
+  GOOD
+  FAIR
+  POOR
+  DEEP
+  OKAY
+  RESTLESS
+  ROUGH
+}
+
+enum subscription_platform {
+  ANDROID
+  IOS
+}
+
+enum subscription_status {
+  ACTIVE
+  IN_GRACE_PERIOD
+  ON_HOLD
+  PAUSED
+  CANCELED
+  EXPIRED
+  FAILED
+}
+
+enum summary_interval {
+  ONE_MONTH
+  THREE_MONTH
+  SIX_MONTH
+}
+
+enum track_frequency {
+  DAILY
+  WEEKLY
+  ENABLED
+  DISABLED
+}
+
+enum track_type {
+  MOOD
+  SLEEP
+  PERIOD
+}
+
+enum visit_notes_status {
+  PENDING
+  COMPLETED
+}
+
+enum visit_type {
+  ANNUAL_WELLNESS
+  SPECIALIST_FOLLOWUP
+  NEW_CONCERN
+  LAB_WORK
+  IMAGING
+  OTHER
+}
