@@ -1,11 +1,10 @@
-import { LogoutButton } from "@/components/auth/logout-button";
-
 export default function DashboardPage() {
   return (
-    <main>
-      <h1>Dashboard</h1>
-
-      <LogoutButton />
-    </main>
+    <div>
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <p className="text-sm text-muted-foreground">
+        Select a module from the sidebar to get started.
+      </p>
+    </div>
   );
 }
