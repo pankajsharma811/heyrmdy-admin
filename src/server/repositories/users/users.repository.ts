@@ -1,22 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import type { ListUserDto } from "@/server/validators/users/list-users.validator";
-
-export type UserListRow = {
-  id: bigint;
-  uuid: string;
-  email_id: string;
-  is_active: boolean;
-  created_at: Date;
-  users_profile: {
-    user_name: string | null;
-    first_name: string;
-    last_name: string;
-    profile_image: string | null;
-  } | null;
-};
+import { ListUserDto } from "@/server/dto/users/user.dto";
+import { UserDetailRow, UserListRow } from "./users.types";
 
 export class UserRepository {
-  async findUsers(params: ListUserDto): Promise<{ rows: UserListRow[]; total: number }> {
+  async findUsers(
+    params: ListUserDto,
+  ): Promise<{ rows: UserListRow[]; total: number }> {
     const { page, limit, search, status } = params;
 
     const where = {
@@ -96,6 +85,37 @@ export class UserRepository {
 
     return { rows, total };
   }
+
+  async findUserDetail(uuid: string): Promise<UserDetailRow | null> {
+    return prisma.users.findUnique({
+      where: { uuid },
+      select: {
+        id: true,
+        uuid: true,
+        email_id: true,
+        is_active: true,
+        created_at: true,
+        users_profile: {
+          select: {
+            first_name: true,
+            last_name: true,
+            profile_image: true,
+          },
+        },
+        _count: {
+          select: {
+            appointments: true,
+            checkins: true,
+            log_symptoms: true,
+            flares: true,
+            channel_members: true,
+          },
+        },
+      },
+    });
+  }
+
+  
 }
 
 export const userRepository = new UserRepository();

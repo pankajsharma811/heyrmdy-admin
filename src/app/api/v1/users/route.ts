@@ -1,8 +1,8 @@
 import { withErrorHandling } from "@/lib/error";
 import { sendPaginated } from "@/lib/response";
+import { listUserQuerySchema } from "@/server/dto/users/user.dto";
 import { requireAdmin } from "@/server/permissions/require-admin";
 import { userService } from "@/server/services/users/users.service";
-import { listUserQuerySchema } from "@/server/validators/users/list-users.validator";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
