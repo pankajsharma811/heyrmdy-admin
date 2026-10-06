@@ -1,4 +1,4 @@
-import { appointment_status, overall_mood, visit_type } from "@/generated/prisma/enums";
+import type { appointment_status, log_flare_intensity, overall_mood, visit_type } from "@/generated/prisma/enums";
 
 export type UserListRow = {
   id: bigint;
@@ -43,4 +43,45 @@ export type AppointmentListRow = {
   date: Date;
   time: string;
   feel: overall_mood | null;
+};
+
+export type CheckinListRow = {
+  id: bigint;
+  week_start: Date;
+  week_end: Date;
+  overall_mood: overall_mood;
+  remedy: string[];
+  notes: string | null;
+  insight: string | null;
+  checkin_symptoms: {
+    symptoms: {
+      name: string;
+    };
+  }[];
+};
+
+export type FlareListRow = {
+  id: bigint;
+  date: Date;
+  time: string;
+  intensity: log_flare_intensity;
+  notes: string | null;
+  custom_symptoms: string[];
+  created_at: Date;
+  flare_symptoms: {
+    symptoms: {
+      name: string;
+    };
+  }[];
+};
+
+export type SymptomLogListRow = {
+  id: bigint;
+  log_date: Date;
+  created_at: Date;
+  log_symptom_items: {
+    symptoms: {
+      name: string;
+    };
+  }[];
 };
