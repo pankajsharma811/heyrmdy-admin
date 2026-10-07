@@ -1,4 +1,4 @@
-import type { appointment_status, log_flare_intensity, overall_mood, visit_type } from "@/generated/prisma/enums";
+import type { appointment_status, channel_type, log_flare_intensity, overall_mood, visit_type } from "@/generated/prisma/enums";
 
 export type UserListRow = {
   id: bigint;
@@ -84,4 +84,15 @@ export type SymptomLogListRow = {
       name: string;
     };
   }[];
+};
+
+export type UserChannelListRow = {
+  created_at: Date;
+  channels: {
+    id: bigint;
+    name: string;
+    image: string | null;
+    channel_type: channel_type;
+    total_members: bigint;
+  };
 };

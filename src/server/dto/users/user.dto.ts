@@ -1,4 +1,4 @@
-import type { appointment_status, log_flare_intensity, overall_mood, visit_type } from "@/generated/prisma/enums";
+import type { appointment_status, channel_type, log_flare_intensity, overall_mood, visit_type } from "@/generated/prisma/enums";
 import { z } from "zod";
 
 export const listUserQuerySchema = z.object({
@@ -48,7 +48,7 @@ export const listAppointmentsQuerySchema = z.object({
 
 export type ListAppointmentsDto = z.infer<typeof listAppointmentsQuerySchema>;
 
-export interface ListAppointmentResponse {
+export interface AppointmentItemResponse {
   id: string;
   providerName: string;
   location: string | null;
@@ -84,7 +84,7 @@ export const listFlaresQuerySchema = z.object({
 
 export type ListFlaresDto = z.infer<typeof listFlaresQuerySchema>;
 
-export interface FlaresItemResponse {
+export interface FlareItemResponse {
   id: string;
   date: Date;
   time: string;
@@ -106,4 +106,31 @@ export interface SymptomLogItemResponse {
   logDate: Date;
   symptoms: string[];
   createdAt: Date;
+}
+
+export const listUserChannelsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10)
+}) 
+
+export type ListUserChannelsDto = z.infer<typeof listUserChannelsQuerySchema>
+
+export interface UserChannelItemResponse {
+  id: string;
+  name: string;
+  image: string | null;
+  channelType: channel_type;
+  totalMembers: number;
+  joinedAt: Date;
+}
+
+export const updateUserStatusSchema = z.object({
+  status: z.boolean()
+})
+
+export type UpdateUserStatusDto = z.infer<typeof updateUserStatusSchema>
+
+export interface UpdateUserStatusResponse {
+  id: string;
+  status: boolean;
 }

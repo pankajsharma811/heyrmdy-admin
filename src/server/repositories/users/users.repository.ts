@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import type { ListAppointmentsDto, ListCheckinsDto, ListFlaresDto, ListSymptomsDto, ListUserDto } from "@/server/dto/users/user.dto";
-import type { AppointmentListRow, CheckinListRow, FlareListRow, SymptomLogListRow, UserDetailRow, UserListRow } from "./users.types";
+import type { ListAppointmentsDto, ListCheckinsDto, ListFlaresDto, ListSymptomsDto, ListUserChannelsDto, ListUserDto } from "@/server/dto/users/user.dto";
+import type { AppointmentListRow, CheckinListRow, FlareListRow, SymptomLogListRow, UserChannelListRow, UserDetailRow, UserListRow } from "./users.types";
 
 export class UserRepository {
   async findUsers( params: ListUserDto ): Promise<{ rows: UserListRow[]; total: number }> {
@@ -275,6 +275,39 @@ export class UserRepository {
     return { rows, total };
   }
 
+  async findUserChannels( uuid: string, params: ListUserChannelsDto): Promise<{rows: UserChannelListRow[]; total: number }>{
+    const { page, limit } = params;
+
+    const where = {
+      users: {
+        uuid,
+      }
+    };
+
+    const [rows, total] = await Promise.all([
+      prisma.channel_members.findMany({
+      where,
+      select: {
+        created_at: true,
+        channels:{
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            channel_type: true,
+            total_members: true,
+            },
+          },
+        },
+        orderBy: { created_at : "desc"},
+        skip: (page-1) * limit,
+        take: limit,
+      }),
+      prisma.channel_members.count({ where })
+    ]);
+    return {rows, total}
+  }
+
   async userExists(uuid: string): Promise<boolean> {
     const user = await prisma.users.findUnique({
       where: { uuid },
@@ -283,7 +316,17 @@ export class UserRepository {
     return !!user;
   }
 
-  
+  async updateUserStatus(uuid: string, status: boolean): Promise<{ id: bigint; is_active: boolean } | null> {
+    try {
+      return await prisma.users.update({
+        where: { uuid },
+        data: { is_active: status },
+        select: { id: true, is_active: true },
+      });
+    } catch {
+      return null;  // user not found (Prisma throws P2025)
+    }
+  }
 }
 
 export const userRepository = new UserRepository();
