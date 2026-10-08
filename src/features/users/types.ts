@@ -1,26 +1,26 @@
 export interface UserListItem {
-    id: string;
-    name: string | null;
-    email: string;
-    profileImage: string | null;
-    status: boolean;
-    joinedAt: string;
+  id: string;
+  name: string | null;
+  email: string;
+  profileImage: string | null;
+  status: boolean;
+  joinedAt: string;
 }
 
 export interface UserDetail {
-    id: string;
-    name: string |null;
-    email: string;
-    profileImage: string | null;
-    status: boolean;
-    joinedAt: string;
-    counts: {
-        appointments: number;
-        checkings: number;
-        symptoms: number;
-        flares: number;
-        channels: number;
-    }
+  id: string;
+  name: string | null;
+  email: string;
+  profileImage: string | null;
+  status: boolean;
+  joinedAt: string;
+  counts: {
+    appointments: number;
+    checkins: number;
+    symptoms: number;
+    flares: number;
+    channels: number;
+  };
 }
 
 export interface AppointmentItem {
